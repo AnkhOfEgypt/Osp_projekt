@@ -1,29 +1,183 @@
 ---
 title: "test"
+author: "Ivan Pavlović, Dino Baralić"
 output: html_document
-date: "2024-01-04"
+date: "`r Sys.Date()`"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(stringr)
+library(hflights)
+library(tidyr)
+library(lubridate)
 ```
 
-## R Markdown
+```{r}
+# UČITAJ PODATKOVNI OKVIR
+putanja <- "C:/Users/dinob/Desktop/OSP/.Osp_projekt/data/ufo_sightings/complete.csv"
+df <- read.csv(putanja)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+df
+```
+```{r}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# zamijeni sa NA vrijednostima
+df$country[df$country == ""] <- NA
+df$state[df$state == ""] <- NA
+df$latitude <- as.numeric(df$latitude)
 
-```{r cars}
-summary(cars)
+# 'shape' ima puno bespotrebnih naziva
+df$shape[df$shape == ""] <- NA
+df$shape[df$shape == "unknown"] <- NA
+df$shape[df$shape == "other"] <- NA
+
+df
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+# FAKORIZACIJA
+
+df$state <- as.factor(df$state)
+df$country <- as.factor(df$country)
+df$shape <- as.factor(df$shape)
+
+# ili
+
+stupci <- c("state", "country", "shape")
+df[, stupci] %>% lapply(factor) -> df[, stupci]
+
+df
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+
+# stavi tip vremenske oznake
+df$datetime <- as.POSIXct(df$datetime, format = "%m/%d/%Y %H:%M")
+df$date.posted <- as.Date(df$date.posted, format = "%m/%d/%Y")
+
+df
+
+```
+
+
+```{r}
+# PREIMENUJ
+
+names(df)[names(df) == "duration..seconds."] <- "duration_sec"
+names(df)[names(df) == "duration..hours.min."] <- "duration_hrs_min"
+names(df)[names(df) == "date.posted"] <- "date_posted"
+df
+
+```
+
+```{r}
+# 1)
+
+# POJAVE NLO-ova PO states-ima
+ggplot(df, aes(x = state)) +
+  geom_bar(fill = "cyan", color = "black") +
+  theme(axis.text.x = element_text(angle = 75, hjust = 1))
+
+
+```
+```{r}
+# 2)
+
+# pojave NLO-ova po državama
+ggplot(df, aes(x = country)) +
+  geom_bar(fill = "chartreuse1", color = "black") +
+  theme(axis.text.x = element_text(angle = 75, hjust = 1))
+
+```
+
+```{r}
+# 3)
+
+# učestalost viđenja pojedinih oblika
+
+ggplot(df2, aes(x = shape)) +
+  geom_bar(fill = "coral") +
+  theme(axis.text.x = element_text(angle = 80, hjust = 1))
+
+
+
+```
+```{r}
+# 4)
+
+#POPRAVI
+
+# datumska raspodjela uočavanja NLO-a
+
+df2 <- df
+df2$year <- year(df2$datetime)
+
+# stavio sam 'year' stupac na drugo mjesto
+df2 <- df2 %>% select("datetime", "year", everything()) 
+df2
+
+
+ggplot(df2, aes(x = shape, y = year, color = shape)) +
+  geom_point(alpha = 0.6, na.rm = T) +
+  scale_x_discrete() +
+  scale_y_continuous() +
+  theme(axis.text.x = element_text(angle = 80, hjust = 1))
+
+
+```
+
+
+```{r}
+# 5)
+
+# pojave NLO-a po geo. širinama/dužinama
+
+ggplot(df, aes(x = longitude, y = latitude, color = shape)) +
+  geom_point(alpha = 0.6, na.rm = T) +
+  scale_x_continuous(name = "dužina") +
+  scale_y_continuous(name = "širina")
+
+```
+
+```{r}
+# 6)
+
+# shape - duration veza
+
+
+```
+
+```{r}
+# 7)
+
+# prikaz NLO-ova u americi/europi ==> izvuci geo. šir/duž da prikazuje samo ameriku/europu
+
+gAmerika <- ggplot(df, aes(x = longitude, y = latitude, color = shape)) +
+  geom_point(alpha = 0.6, na.rm = T) +
+  scale_x_continuous(name = "dužina") +
+  scale_y_continuous(name = "širina") +
+  coord_cartesian(xlim = c(-150, -50), ylim = c(15, 75)) +
+  labs(title = "Amerika")
+
+gEuropa <- ggplot(df, aes(x = longitude, y = latitude, color = shape)) +
+  geom_point(alpha = 0.6, na.rm = T) +
+  scale_x_continuous(name = "dužina") +
+  scale_y_continuous(name = "širina") +
+  coord_cartesian(xlim = c(-25, 50), ylim = c(25, 75)) +
+  labs(title = "Europa")
+
+gAmerika
+gEuropa
+
+# POPRAVI NAREDBU ISPOD
+#grid.arrange(gAmerika, gEuropa, ncol = 2, nrow = 1)
+
+```
+
