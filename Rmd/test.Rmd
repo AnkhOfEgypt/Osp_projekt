@@ -17,7 +17,8 @@ library(lubridate)
 
 ```{r}
 # UČITAJ PODATKOVNI OKVIR
-putanja <- "C:/Users/dinob/Desktop/OSP/.Osp_projekt/data/ufo_sightings/complete.csv"
+#putanja <- "C:/Users/dinob/Desktop/OSP/.Osp_projekt/data/ufo_sightings/complete.csv"
+putanja <- "../data/ufo_sightings/complete.csv"
 df <- read.csv(putanja)
 
 df
@@ -87,6 +88,8 @@ ggplot(df, aes(x = state)) +
 
 
 ```
+
+
 ```{r}
 # 2)
 
@@ -97,18 +100,20 @@ ggplot(df, aes(x = country)) +
 
 ```
 
+
 ```{r}
 # 3)
 
 # učestalost viđenja pojedinih oblika
 
-ggplot(df2, aes(x = shape)) +
+ggplot(df, aes(x = shape)) +
   geom_bar(fill = "coral") +
   theme(axis.text.x = element_text(angle = 80, hjust = 1))
 
 
 
 ```
+
 ```{r}
 # 4)
 
@@ -146,16 +151,9 @@ ggplot(df, aes(x = longitude, y = latitude, color = shape)) +
 
 ```
 
+
 ```{r}
 # 6)
-
-# shape - duration veza
-
-
-```
-
-```{r}
-# 7)
 
 # prikaz NLO-ova u americi/europi ==> izvuci geo. šir/duž da prikazuje samo ameriku/europu
 
@@ -178,6 +176,97 @@ gEuropa
 
 # POPRAVI NAREDBU ISPOD
 #grid.arrange(gAmerika, gEuropa, ncol = 2, nrow = 1)
+
+```
+
+```{r}
+# 7)
+
+# raspodjela NLO-a viđenja po mjesecima 
+
+df$month <- month(df$datetime, label = TRUE, abbr = FALSE)
+
+#micanje miseca koji su NA
+df_filtered <- df[complete.cases(df$month), ]
+
+ggplot(df_filtered, aes(x = month, fill = factor(month))) +
+  geom_bar() +
+  scale_x_discrete(labels = month.name) +  
+  labs(title = "Raspodjela viđenja NLO-a po mjesecima ", x = "Month", y = "Count") +
+  theme_minimal()+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+
+
+```{r}
+# 8) Raspodjela vidđenja po danima u tjednu
+
+dow <- df %>%
+  mutate(day_of_week = weekdays(as.Date(datetime)))
+
+#micanje dana koji su NA
+dow_filtered <- dow[complete.cases(dow$day_of_week), ]
+
+ggplot(dow_filtered, aes(x = day_of_week, fill = day_of_week)) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "UFO viđenja po danima u tjednu", x = "Dan u tjednu", y = "Broj viđenja")
+
+
+
+
+```
+
+```{r}
+# 9) Top 10 gradova po viđenjima NLO-a
+
+
+top_cities <- df %>% 
+  group_by(city) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  top_n(10) 
+
+ggplot(top_cities, aes(x = "", y = count, fill = city)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  geom_text(aes(label = count), position = position_stack(vjust = 0.5), size = 3) +
+  coord_polar("y") +
+  theme_void() +
+  labs(title = "Top 10 gradova po viđenjima NLO-a", fill = "Grad") +
+  scale_fill_brewer(palette = "Set3")  
+
+
+```
+
+
+```{r}
+# 10) Trend NLO viđenja po desetljećima
+
+df$datetime <- as.POSIXct(df$datetime, format="%m/%d/%Y %H:%M", tz="")
+
+df3 <- df %>%
+  mutate(decade = cut(year(datetime), breaks = seq(1900, 2020, by = 10), labels = seq(1900, 2020, by = 10)[-1]))
+
+# makni redove di fali desetljece ili broj viđenja
+df3 <- df3 %>%
+  filter(!is.na(decade)) %>%
+  group_by(decade) %>%
+  summarise(sightings_count = n())
+
+# detestljece u factor
+df3$decade <- as.factor(df3$decade)
+
+ggplot(df3, aes(x = decade, y = sightings_count, group = 1)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "UFO Sighting Trends Over Decades",
+       x = "Decade",
+       y = "Number of Sightings") +
+  theme_minimal()
+
 
 ```
 
