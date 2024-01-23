@@ -269,4 +269,25 @@ ggplot(df3, aes(x = decade, y = sightings_count, group = 1)) +
 
 
 ```
+```{r}
+
+# 11) NLO oblici po godinama
+
+df4 <- df
+df4$year <- year(df$datetime)
+
+
+df4 %>%
+  group_by(year, shape) %>%
+  summarise(count = n()) %>%
+  ggplot(aes(x = year, y = count, fill = shape)) +
+  geom_area(position = "stack") +
+  theme_minimal() +
+  scale_x_continuous(limits = c(1940, max(df4$year))) + 
+  labs(title = "NLO oblici po godinama",
+       x = "Godina",
+       y = "Broj",
+       fill = "NLO oblik")
+
+```
 
